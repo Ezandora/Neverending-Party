@@ -1,4 +1,4 @@
-string __party_version = "1.0.2";
+string __party_version = "1.0.3";
 
 boolean [int][int] parseSavedPartyChoices()
 {
@@ -350,7 +350,7 @@ void main(string arguments)
 		}
 		if (active_quest == QUEST_TYPE_DJ)
 		{
-			if (my_buffedstat($stat[moxie]) >= 300)
+			if (my_buffedstat($stat[moxie]) >= 300 && !party_choices_taken[1325][4])
 			{
 				choices[1324] = 1;
 				choices[1325] = 4;
