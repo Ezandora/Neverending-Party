@@ -1,4 +1,4 @@
-string __party_version = "1.0.1";
+string __party_version = "1.0.2";
 
 boolean [int][int] parseSavedPartyChoices()
 {
@@ -130,6 +130,16 @@ void main(string arguments)
 		{
 			//Check if we have free fights left:
 			buffer town_wrong_page_text = visit_url("place.php?whichplace=town_wrong");
+			if (!town_wrong_page_text.contains_text("The Wrong Side of the Tracks"))
+			{
+				run_combat();
+			}
+			town_wrong_page_text = visit_url("place.php?whichplace=town_wrong");
+			if (!town_wrong_page_text.contains_text("The Wrong Side of the Tracks"))
+			{
+				print("Cannot see kingdom? Are you in a choice adventure or fight?", "red");
+				return;
+			}
 			if (!town_wrong_page_text.contains_text("town/nparty_free.gif"))
 			{
 				print_html("Done with free fights.");
@@ -362,7 +372,25 @@ void main(string arguments)
 		
 		foreach choice_id, option in choices
 			set_property("choiceAdventure" + choice_id, option);
-		boolean successish = adv1($location[the neverending party], 0, "");
+			
+		string combat_script = "";
+		//scaling monsters are tough, let's go shopping:
+		if ($skill[saucestorm].have_skill())
+		{
+			combat_script = "cast saucestorm; repeat";
+			if (my_level() < 13)
+				restore_mp(32);
+			else
+				restore_mp(64);
+		}
+		boolean was_beaten_up = $effect[beaten up].have_effect() == 0;
+		boolean successish = adv1($location[the neverending party], 0, combat_script);
+		if ($effect[beaten up].have_effect() > 0 && !was_beaten_up)
+		{
+			print("You were beaten up! Stopping. Maybe perm saucestorm?", "red");
+			return;
+		}
+		
 		
 		string last_encounter = get_property("lastEncounter");
 		if (last_encounter == "All Done!" || last_encounter == "Party's Over" || !successish)
