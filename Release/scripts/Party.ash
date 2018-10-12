@@ -1,4 +1,4 @@
-string __party_version = "1.0";
+string __party_version = "1.0.1";
 
 boolean [int][int] parseSavedPartyChoices()
 {
@@ -41,12 +41,13 @@ void main(string arguments)
 		print_html("<b>quest</b>: complete quest (on by default)");
 		print_html("<b>noquest</b>: only complete free fights, do not start quest (best for in-run)");
 		print_html("<b>hard</b>: hard mode, if available");
-		//print_html("<b>mall</b>: open favors and sell results in mall"); //not yet written
+		print_html("<b>mall</b>: open favors and sell results in mall");
 		print_html("");
 		print_html("Example usage:");
-		print_html("<b>party</b>: complete quest");
+		print_html("<b>party quest</b>: complete quest");
 		print_html("<b>party hard</b>: complete hard mode quest");
-		print_html("<b>party noquest</b>: use when in-run");
+		print_html("<b>party noquest</b>: use when in-run - won't complete quest.");
+		print_html("<b>party free</b>: only use free fights, but will complete the quest if it can.");
 		return;
 	}
 	if (property_exists("_questPartyFair") && (get_property("_questPartyFair") == "finished" || get_property("_questPartyFair") == ""))
@@ -61,6 +62,11 @@ void main(string arguments)
 	boolean hard_mode = false;
 	boolean sell_gains = false;
 	
+	int [item] starting_favor_count;
+	foreach it in $items[Neverending Party favor,deluxe Neverending Party favor]
+	{
+		starting_favor_count[it] = it.item_amount();
+	}
 	string [int] arguments_words = arguments.split_string(" ");
 	foreach key, word in arguments_words
 	{
@@ -93,6 +99,7 @@ void main(string arguments)
 	
 	if ($item[PARTY HARD T-shirt].available_amount() == 0)
 	{
+		print("You don't have a PARTY HARD t-shirt, defaulting to easy mode...", "red");
 		hard_mode = false;
 	}
 	
@@ -150,11 +157,21 @@ void main(string arguments)
 		if (complete_quest && active_quest == -1)
 		{
 			buffer quest_log_text = visit_url("questlog.php?which=7");
+			if (!quest_log_text.contains_text("Your Quest Log"))
+			{
+				print("Error: cannot load quest log.", "red");
+				return;
+			}
 			string partial_match = quest_log_text.group_string("<p><b>Party Fair</b>(.*?)<p>")[0][1];
 			
 			if (partial_match == "")
 			{
 				//not started yet
+				if (get_property("_questPartyFair") != "unstarted")
+				{
+					print("Error: cannot parse quest log.", "red");
+					return;
+				}
 			}
 			else if (partial_match.contains_text("Return to the") && partial_match.contains_text("for your reward"))
 			{
@@ -209,6 +226,11 @@ void main(string arguments)
 						break;
 					}
 				}
+				if (item_wanted == $item[none])
+				{
+					print("Error: cannot recognise item the quest wants.", "red");
+					return;
+				}
 				print("Want " + item_wanted_amount + " of " + item_wanted + " (assumed match against plural \"" + plural_wanted + "\")");
 			}
 			else if (partial_match.contains_text("started!") && partial_match.contains_text("Hype level:"))
@@ -216,7 +238,10 @@ void main(string arguments)
 				active_quest = QUEST_TYPE_HYPE;
 			}
 			else
-				abort("unknown partial match = \"" + partial_match.entity_encode() + "\"");
+			{
+				print("Quest log parsing error: unknown partial match = \"" + partial_match.entity_encode() + "\"", "red");
+				return;
+			}
 		}
 		
 		string maximisation_command;
@@ -261,7 +286,7 @@ void main(string arguments)
 		if (item_wanted != $item[none] && can_interact() && item_wanted_amount < 100)
 		{
 			retrieve_item(item_wanted_amount, item_wanted);
-			//FIXME if not in ronin, use that one item
+			//FIXME if not in ronin, use the items that give the reward? Or just let them wait until aftercore...?
 		}
 		//Choice adventure:
 		int [int] choices;
@@ -328,7 +353,6 @@ void main(string arguments)
 				choices[1324] = 4;
 				choices[1328] = 4;
 			}
-			//else little red dress
 			else if (!party_choices_taken[1325][5] && $item[very small red dress].item_amount() > 0)
 			{
 				choices[1324] = 1;
@@ -361,6 +385,28 @@ void main(string arguments)
 	if (sell_gains)
 	{
 		//Open party favors we gained, sell:
-		
+		int [item] favor_rewards_count;
+		foreach it in $items[party beer bomb,sweet party mix,party balloon,Neverending Party guest pass,TRIO cup of beer,party platter for one,Party-in-a-Can&trade;]
+		{
+			favor_rewards_count[it] = it.item_amount();
+		}
+		foreach it in starting_favor_count
+		{
+			int new_count = it.item_amount();
+			if (new_count > starting_favor_count[it])
+			{
+				use(1, it);
+			}
+		}
+		foreach it, starting_amount in favor_rewards_count
+		{
+			int delta = it.item_amount() - starting_amount;
+			if (delta <= 0) continue;
+			if (delta > 3) continue; //what
+			
+			int price = it.mall_price();
+			if (price <= 0) continue;
+			put_shop(price, 0, delta, it); 
+		}
 	}
 }
