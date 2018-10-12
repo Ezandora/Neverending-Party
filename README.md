@@ -12,15 +12,14 @@ Will require [a recent build of KoLMafia](http://builds.kolmafia.us/job/Kolmafia
 
 Usage
 ----------------
-Commands:
-
-__free__: only complete free fights
-__quest__: complete quest (on by default)
-__noquest__: only complete free fights, do not start quest (best for in-run)
-__hard__: hard mode, if available
-
-Example usage:
-__party__: complete quest
-__party hard__: complete hard mode quest
-__party noquest__: use when in-run - won't complete quest
-__party free__: only use free fights, but will complete the quest if it can.
+Commands:  
+__free__: only complete free fights  
+__quest__: complete quest (on by default)  
+__noquest__: only complete free fights, do not start quest (best for in-run)  
+__hard__: hard mode, if available  
+  
+Example usage:  
+__party__: complete quest  
+__party hard__: complete hard mode quest  
+__party noquest__: use when in-run - won't complete quest  
+__party free__: only use free fights, but will complete the quest if it can.  
