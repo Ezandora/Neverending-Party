@@ -1,4 +1,4 @@
-string __party_version = "1.0.3";
+string __party_version = "1.0.4";
 
 boolean [int][int] parseSavedPartyChoices()
 {
@@ -177,7 +177,7 @@ void main(string arguments)
 			if (partial_match == "")
 			{
 				//not started yet
-				if (get_property("_questPartyFair") != "unstarted")
+				if (property_exists("_questPartyFair") && get_property("_questPartyFair") != "unstarted")
 				{
 					print("Error: cannot parse quest log.", "red");
 					return;
