@@ -1,4 +1,4 @@
-string __party_version = "1.0.4";
+string __party_version = "1.0.5";
 
 boolean [int][int] parseSavedPartyChoices()
 {
@@ -78,7 +78,6 @@ void main(string arguments)
 		if (word == "free")
 		{
 			only_do_free_fights = true;
-			complete_quest = false;
 		}
 		if (word == "hard")
 			hard_mode = true;
