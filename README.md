@@ -18,6 +18,7 @@ __quest__: complete quest (on by default)
 __noquest__: only complete free fights, do not start quest (best for in-run)  
 __hard__: hard mode, if available  
 __mall__: open favors and sell results in mall  
+__clara__: use clara's bell, if available
   
 Example usage:  
 __party quest__: complete quest  

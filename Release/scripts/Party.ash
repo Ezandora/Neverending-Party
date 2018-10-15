@@ -1,4 +1,4 @@
-string __party_version = "1.0.5";
+string __party_version = "1.0.6";
 
 boolean [int][int] parseSavedPartyChoices()
 {
@@ -61,6 +61,8 @@ void main(string arguments)
 	boolean complete_quest = true;
 	boolean hard_mode = false;
 	boolean sell_gains = false;
+	boolean use_claras_bell = false;
+	boolean block_guests_quest = false;
 	
 	int [item] starting_favor_count;
 	foreach it in $items[Neverending Party favor,deluxe Neverending Party favor]
@@ -93,6 +95,14 @@ void main(string arguments)
 			sell_gains = true;
 			//FIXME do hard mode if the rewards are better on average
 		}
+		if (word == "clara" || word == "clara's" || word == "bell")
+		{
+			use_claras_bell = true;
+		}
+		if (word == "noguests" || word == "noguest")
+		{
+			block_guests_quest = true;
+		}
 		//FIXME buffs/statgain:
 	}
 	
@@ -111,6 +121,7 @@ void main(string arguments)
 	
 	item item_wanted = $item[none];
 	int item_wanted_amount = 0;
+	item item_that_gives_wanted_item = $item[none];
 	
 	int QUEST_TYPE_DJ = 1;
 	int QUEST_TYPE_CLEAR_OUT_GUESTS = 2;
@@ -193,6 +204,8 @@ void main(string arguments)
 			else if (partial_match.contains_text("Clear all of the guests out of the"))
 			{
 				active_quest = QUEST_TYPE_CLEAR_OUT_GUESTS;
+				if (block_guests_quest)
+					only_do_free_fights = true;
 			}
 			else if (partial_match.contains_text("Clean up the trash at the"))
 			{
@@ -218,9 +231,15 @@ void main(string arguments)
 				//Parse the one we want:
 				string [int][int] matches;
 				if (active_quest == QUEST_TYPE_GERALD)
+				{
 					matches = partial_match.group_string("Get ([0-9]+) (.*?) for Gerald at the");
+					item_that_gives_wanted_item = $item[unremarkable duffel bag];
+				}
 				else
+				{
 					matches = partial_match.group_string("Get ([0-9]+) (.*?) for Geraldine at the");
+					item_that_gives_wanted_item = $item[van key];
+				}
 				if (matches.count() == 0)
 					matches = partial_match.group_string("Take the ([0-9]+) (.*?) to Geraldine in the kitchen");
 				int amount_wanted = matches[0][1].to_int();
@@ -258,7 +277,7 @@ void main(string arguments)
 			maximisation_command = "meat";
 		else
 			maximisation_command = "item";
-		
+		maximisation_command += " -tie";
 		if (active_quest == QUEST_TYPE_CLEAR_OUT_GUESTS)
 		{
 			if ($item[intimidating chainsaw].available_amount() > 0)
@@ -292,8 +311,17 @@ void main(string arguments)
 		}
 		
 		//Items:
-		if (item_wanted != $item[none] && can_interact() && item_wanted_amount < 100)
+		if (item_wanted != $item[none] && can_interact() && item_wanted_amount <= 20)
 		{
+			//Compare cost of item_wanted versus using item_that_gives_wanted_item:
+			//item_that_gives_wanted_item gives 2-4 of each.
+			if (my_id() == 1557284)
+				abort("write this van key code, ezandora!");
+			if (item_that_gives_wanted_item.mall_price() > 0 && item_that_gives_wanted_item.mall_price().to_float() / 3.0 < item_wanted.mall_price())
+			{
+				//Cheaper on average to use the van key/etc. So, use them:
+				
+			}
 			retrieve_item(item_wanted_amount, item_wanted);
 			//FIXME if not in ronin, use the items that give the reward? Or just let them wait until aftercore...?
 		}
@@ -381,6 +409,10 @@ void main(string arguments)
 				restore_mp(32);
 			else
 				restore_mp(64);
+		}
+		if (use_claras_bell && $item[clara's bell].available_amount() > 0 && !get_property("_claraBellUsed").to_boolean() && active_quest > 0) //'
+		{
+			cli_execute("use clara's bell");
 		}
 		boolean was_beaten_up = $effect[beaten up].have_effect() == 0;
 		boolean successish = adv1($location[the neverending party], 0, combat_script);
