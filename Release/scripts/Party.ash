@@ -1,4 +1,4 @@
-string __party_version = "1.0.6";
+string __party_version = "1.0.7";
 
 boolean [int][int] parseSavedPartyChoices()
 {
@@ -63,6 +63,7 @@ void main(string arguments)
 	boolean sell_gains = false;
 	boolean use_claras_bell = false;
 	boolean block_guests_quest = false;
+	boolean simple_mode_enabled = false;
 	
 	int [item] starting_favor_count;
 	foreach it in $items[Neverending Party favor,deluxe Neverending Party favor]
@@ -102,6 +103,10 @@ void main(string arguments)
 		if (word == "noguests" || word == "noguest")
 		{
 			block_guests_quest = true;
+		}
+		if (word == "simple") //don't change outfits, don't submit a combat script
+		{
+			simple_mode_enabled = true;
 		}
 		//FIXME buffs/statgain:
 	}
@@ -228,38 +233,56 @@ void main(string arguments)
 				else
 					active_quest = QUEST_TYPE_GERALD;
 				quest_substate = 1;
-				//Parse the one we want:
-				string [int][int] matches;
 				if (active_quest == QUEST_TYPE_GERALD)
 				{
-					matches = partial_match.group_string("Get ([0-9]+) (.*?) for Gerald at the");
 					item_that_gives_wanted_item = $item[unremarkable duffel bag];
 				}
 				else
 				{
-					matches = partial_match.group_string("Get ([0-9]+) (.*?) for Geraldine at the");
 					item_that_gives_wanted_item = $item[van key];
 				}
-				if (matches.count() == 0)
-					matches = partial_match.group_string("Take the ([0-9]+) (.*?) to Geraldine in the kitchen");
-				int amount_wanted = matches[0][1].to_int();
-				string plural_wanted = matches[0][2];
-				item_wanted_amount = amount_wanted;
-				//Convert plural back:
-				foreach it in $items[]
+				
+				string [int] progress_property_text_split = get_property("_questPartyFairProgress").split_string(" ");
+				if (progress_property_text_split.count() == 2 && progress_property_text_split[0].to_int() == 10)
 				{
-					if (it.plural == plural_wanted)
+					item_wanted_amount = progress_property_text_split[0].to_int();
+					item_wanted = progress_property_text_split[1].to_item();
+					if (item_wanted != $item[none])
+						print("Want " + item_wanted_amount + " of " + item_wanted + " (from mafia tracking)");
+				}
+				if (item_wanted == $item[none])
+				{
+					//Parse the one we want:
+					string [int][int] matches;
+					if (active_quest == QUEST_TYPE_GERALD)
 					{
-						item_wanted = it;
-						break;
+						matches = partial_match.group_string("Get ([0-9]+) (.*?) for Gerald at the");
 					}
+					else
+					{
+						matches = partial_match.group_string("Get ([0-9]+) (.*?) for Geraldine at the");
+					}
+					if (matches.count() == 0)
+						matches = partial_match.group_string("Take the ([0-9]+) (.*?) to Geraldine in the kitchen");
+					int amount_wanted = matches[0][1].to_int();
+					string plural_wanted = matches[0][2];
+					item_wanted_amount = amount_wanted;
+					//Convert plural back:
+					foreach it in $items[]
+					{
+						if (it.plural == plural_wanted)
+						{
+							item_wanted = it;
+							break;
+						}
+					}
+					print("Want " + item_wanted_amount + " of " + item_wanted + " (assumed match against plural \"" + plural_wanted + "\")");
 				}
 				if (item_wanted == $item[none])
 				{
 					print("Error: cannot recognise item the quest wants.", "red");
 					return;
 				}
-				print("Want " + item_wanted_amount + " of " + item_wanted + " (assumed match against plural \"" + plural_wanted + "\")");
 			}
 			else if (partial_match.contains_text("started!") && partial_match.contains_text("Hype level:"))
 			{
@@ -304,7 +327,7 @@ void main(string arguments)
 		if (hard_mode)
 			maximisation_command += " +equip PARTY HARD T-shirt";
 		maximisation_command += " -equip broken champagne bottle";
-		if (last_maximisation != maximisation_command)
+		if (last_maximisation != maximisation_command && !simple_mode_enabled)
 		{
 			maximize(maximisation_command, false);
 			last_maximisation = maximisation_command;
@@ -315,15 +338,23 @@ void main(string arguments)
 		{
 			//Compare cost of item_wanted versus using item_that_gives_wanted_item:
 			//item_that_gives_wanted_item gives 2-4 of each.
-			if (my_id() == 1557284)
-				abort("write this van key code, ezandora!");
+			
+			
 			if (item_that_gives_wanted_item.mall_price() > 0 && item_that_gives_wanted_item.mall_price().to_float() / 3.0 < item_wanted.mall_price())
 			{
 				//Cheaper on average to use the van key/etc. So, use them:
-				
+				print_html("Cheaper to use " + item_that_gives_wanted_item);
+				for i from 1 to 5
+				{
+					if (item_wanted.item_amount() >= item_wanted_amount)
+						break;
+					int amount_before = item_wanted.item_amount();
+					use(1, item_that_gives_wanted_item);
+					int amount_after = item_wanted.item_amount();
+					if (amount_before == amount_after) break; //not working
+				}
 			}
 			retrieve_item(item_wanted_amount, item_wanted);
-			//FIXME if not in ronin, use the items that give the reward? Or just let them wait until aftercore...?
 		}
 		//Choice adventure:
 		int [int] choices;
@@ -414,6 +445,8 @@ void main(string arguments)
 		{
 			cli_execute("use clara's bell");
 		}
+		if (simple_mode_enabled)
+			combat_script = "";
 		boolean was_beaten_up = $effect[beaten up].have_effect() == 0;
 		boolean successish = adv1($location[the neverending party], 0, combat_script);
 		if ($effect[beaten up].have_effect() > 0 && !was_beaten_up)
