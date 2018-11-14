@@ -1,4 +1,4 @@
-string __party_version = "1.0.7";
+string __party_version = "1.0.8";
 
 boolean [int][int] parseSavedPartyChoices()
 {
@@ -104,7 +104,7 @@ void main(string arguments)
 		{
 			block_guests_quest = true;
 		}
-		if (word == "simple") //don't change outfits, don't submit a combat script
+		if (word == "simple") //don't change outfits, don't submit a combat script, don't do hard mode
 		{
 			simple_mode_enabled = true;
 		}
@@ -331,6 +331,11 @@ void main(string arguments)
 		{
 			maximize(maximisation_command, false);
 			last_maximisation = maximisation_command;
+		}
+		if (hard_mode && $item[PARTY HARD T-shirt].equipped_amount() == 0 && $item[PARTY HARD T-shirt].available_amount() > 0 && !simple_mode_enabled)
+		{
+			//absolutely equip the t-shirt, because sometimes maximize() fails...? or something?
+			equip($item[PARTY HARD T-shirt]);
 		}
 		
 		//Items:
