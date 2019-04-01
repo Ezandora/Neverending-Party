@@ -1,4 +1,4 @@
-string __party_version = "1.0.8";
+string __party_version = "1.0.9";
 
 boolean [int][int] parseSavedPartyChoices()
 {
@@ -187,7 +187,7 @@ void main(string arguments)
 				print("Error: cannot load quest log.", "red");
 				return;
 			}
-			string partial_match = quest_log_text.group_string("<p><b>Party Fair</b>(.*?)<p>")[0][1];
+			string partial_match = quest_log_text.group_string("<b>Party Fair</b>(.*?)<p>")[0][1];
 			
 			if (partial_match == "")
 			{
@@ -337,7 +337,6 @@ void main(string arguments)
 			//absolutely equip the t-shirt, because sometimes maximize() fails...? or something?
 			equip($item[PARTY HARD T-shirt]);
 		}
-		
 		//Items:
 		if (item_wanted != $item[none] && can_interact() && item_wanted_amount <= 20)
 		{
@@ -446,6 +445,10 @@ void main(string arguments)
 			else
 				restore_mp(64);
 		}
+		if ($item[drunkula's wineglass].equipped_amount() > 0)
+			combat_script = "attack; repeat;";
+		if (get_property("customCombatScript") == "helix fossil")
+			combat_script = "";
 		if (use_claras_bell && $item[clara's bell].available_amount() > 0 && !get_property("_claraBellUsed").to_boolean() && active_quest > 0) //'
 		{
 			cli_execute("use clara's bell");
