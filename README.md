@@ -6,7 +6,7 @@ Installation
 ----------------
 Run this command in the graphical CLI:
 <pre>
-svn checkout https://github.com/Ezandora/Neverending-Party/trunk/Release/
+git checkout https://github.com/Ezandora/Neverending-Party.git
 </pre>
 Will require [a recent build of KoLMafia](http://builds.kolmafia.us/job/Kolmafia/lastSuccessfulBuild/).
 
